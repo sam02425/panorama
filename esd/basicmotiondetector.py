@@ -1,6 +1,7 @@
 # import the necessary packages
 import imutils
 import cv2
+import numpy as np
 
 class BasicMotionDetector:
 	def __init__(self, accumWeight=0.5, deltaThresh=5, minArea=5000):
@@ -17,39 +18,75 @@ class BasicMotionDetector:
 		self.avg = None
 
 	def update(self, image):
-		# initialize the list of locations containing motion
-		locs = []
-
-		# if the average image is None, initialize it
+		# if the accumulated average image is None, initialize it
 		if self.avg is None:
 			self.avg = image.astype("float")
-			return locs
+			return []
 
-		# otherwise, accumulate the weighted average between
-		# the current frame and the previous frames, then compute
-		# the pixel-wise differences between the current frame
-		# and running average
+		# check if the input image size matches the accumulated average image size
+		if image.shape != self.avg.shape:
+			self.avg = image.astype("float")
+			return []
+
+		# accumulate the weighted average between the current frame and
+		# previous frames, then compute the difference between the current
+		# frame and running average
 		cv2.accumulateWeighted(image, self.avg, self.accumWeight)
 		frameDelta = cv2.absdiff(image, cv2.convertScaleAbs(self.avg))
 
-		# threshold the delta image and apply a series of dilations
-		# to help fill in holes
-		thresh = cv2.threshold(frameDelta, self.deltaThresh, 255,
-			cv2.THRESH_BINARY)[1]
+		# threshold the delta image, dilate the thresholded image to fill
+		# in holes, then find contours on thresholded image
+		thresh = cv2.threshold(frameDelta, self.deltaThresh, 255, cv2.THRESH_BINARY)[1]
 		thresh = cv2.dilate(thresh, None, iterations=2)
-
-		# find contours in the thresholded image, taking care to
-		# use the appropriate version of OpenCV
-		cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
-			cv2.CHAIN_APPROX_SIMPLE)
-		cnts = imutils.grab_contours(cnts)
+		contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 		# loop over the contours
-		for c in cnts:
-			# only add the contour to the locations list if it
-			# exceeds the minimum area
-			if cv2.contourArea(c) > self.minArea:
-				locs.append(c)
+		locs = []
+		for c in contours:
+			# if the contour is too small, ignore it
+			if cv2.contourArea(c) < self.minArea:
+				continue
 
-		# return the set of locations
+			# compute the bounding box for the contour
+			(x, y, w, h) = cv2.boundingRect(c)
+			locs.append((x, y, x + w, y + h))
+
+		# return the locations of motion
 		return locs
+	# def update(self, image):
+	# 	# initialize the list of locations containing motion
+	# 	locs = []
+
+	# 	# if the average image is None, initialize it
+	# 	if self.avg is None:
+	# 		self.avg = image.astype("float")
+	# 		return locs
+
+	# 	# otherwise, accumulate the weighted average between
+	# 	# the current frame and the previous frames, then compute
+	# 	# the pixel-wise differences between the current frame
+	# 	# and running average
+	# 	cv2.accumulateWeighted(image, self.avg, self.accumWeight)
+	# 	frameDelta = cv2.absdiff(image, cv2.convertScaleAbs(self.avg))
+
+	# 	# threshold the delta image and apply a series of dilations
+	# 	# to help fill in holes
+	# 	thresh = cv2.threshold(frameDelta, self.deltaThresh, 255,
+	# 		cv2.THRESH_BINARY)[1]
+	# 	thresh = cv2.dilate(thresh, None, iterations=2)
+
+	# 	# find contours in the thresholded image, taking care to
+	# 	# use the appropriate version of OpenCV
+	# 	cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
+	# 		cv2.CHAIN_APPROX_SIMPLE)
+	# 	cnts = imutils.grab_contours(cnts)
+
+	# 	# loop over the contours
+	# 	for c in cnts:
+	# 		# only add the contour to the locations list if it
+	# 		# exceeds the minimum area
+	# 		if cv2.contourArea(c) > self.minArea:
+	# 			locs.append(c)
+
+	# 	# return the set of locations
+	# 	return locs

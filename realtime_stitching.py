@@ -15,9 +15,9 @@ import cv2
 
 # initialize the video streams and allow them to warmup
 print("[INFO] starting cameras...")
-leftStream = VideoStream(src=0).start()
-middleStream = VideoStream(src=1).start()
-rightStream = VideoStream(src=2).start()
+leftStream = VideoStream(src=1).start()
+middleStream = VideoStream(src=2).start()
+rightStream = VideoStream(src=3).start()
 time.sleep(2.0)
 
 # initialize the image stitcher, motion detector, and total
@@ -58,23 +58,33 @@ while True:
     # only process the panorama for motion if a nice average has
     # been built up
     if total > 32 and len(locs) > 0:
-        # initialize the minimum and maximum (x, y)-coordinates,
-        # respectively
-        (minX, minY) = (np.inf, np.inf)
-        (maxX, maxY) = (-np.inf, -np.inf)
+        # loop over the locations of motion and draw bounding boxes
+        for box in locs:
+            if len(box) == 4:
+                (startX, startY, endX, endY) = box
+                cv2.rectangle(result, (startX, startY), (endX, endY), (0, 0, 255), 2)
 
-        # loop over the locations of motion and accumulate the
-        # minimum and maximum locations of the bounding boxes
-        for l in locs:
-            (x, y, w, h) = cv2.boundingRect(l)
-            (minX, maxX) = (min(minX, x), max(maxX, x + w))
-            (minY, maxY) = (min(minY, y), max(maxY, y + h))
+    # if total > 32 and len(locs) > 0:
+    #     # initialize the minimum and maximum (x, y)-coordinates,
+    #     # respectively
+    #     (minX, minY) = (np.inf, np.inf)
+    #     (maxX, maxY) = (-np.inf, -np.inf)
 
-        # draw the bounding box
-        cv2.rectangle(result, (minX, minY), (maxX, maxY), (0, 0, 255), 3)
+    #     # loop over the locations of motion and accumulate the
+    #     # minimum and maximum locations of the bounding boxes
+    #     for l in locs:
+    #         if len(l) > 0:  # check if the contour is not empty
+    #             (x, y, w, h) = cv2.boundingRect(l)
+    #             (minX, maxX) = (min(minX, x), max(maxX, x + w))
+    #             (minY, maxY) = (min(minY, y), max(maxY, y + h))
 
-    # increment the total number of frames read and draw the
-    # timestamp on the image
+    #     # draw the bounding box
+    #     # cv2.rectangle(result, (minX, minY), (maxX, maxY), (0, 0, 255), 3)
+    #     if minX != np.inf and minY != np.inf and maxX != -np.inf and maxY != -np.inf:
+    #         cv2.rectangle(result, (minX, minY), (maxX, maxY), (0, 0, 255), 3)
+
+    # # increment the total number of frames read and draw the
+    # # timestamp on the image
     total += 1
     timestamp = datetime.datetime.now()
     ts = timestamp.strftime("%A %d %B %Y %I:%M:%S%p")

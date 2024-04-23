@@ -62,7 +62,7 @@ class Stitcher:
             raise ValueError("Empty input image")
 
         # detect and extract features from the image
-        descriptor = cv2.SIFT_create(nfeatures=0, nOctaveLayers=3, contrastThreshold=0.04, edgeThreshold=10, sigma=1.6)
+        descriptor = cv2.SIFT_create(nfeatures=500, nOctaveLayers=4, contrastThreshold=0.03, edgeThreshold=8, sigma=1.2)
         (kps, features) = descriptor.detectAndCompute(image, None)
 
         if kps is None or features is None:
@@ -92,8 +92,8 @@ class Stitcher:
         if len(matches) > 4:
             print("Number of matches found:", len(matches))
             # construct the two sets of points
-            ptsA = np.float32([kpsA[i] for (_, i) in matches])
-            ptsB = np.float32([kpsB[i] for (i, _) in matches])
+            ptsA = np.float32([kpsA[i].pt for (_, i) in matches])
+            ptsB = np.float32([kpsB[i].pt for (i, _) in matches])
             print("ptsA shape:", ptsA.shape)
             print("ptsB shape:", ptsB.shape)
 
@@ -107,3 +107,36 @@ class Stitcher:
             print("Number of matches found:", len(matches))
         # otherwise, no homography could be computed
         return None
+    # def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB, ratio, reprojThresh):
+    #     # compute the raw matches and initialize the list of actual
+    #     # matches
+    #     matcher = cv2.DescriptorMatcher_create("BruteForce")
+    #     rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
+    #     matches = []
+
+    #     # loop over the raw matches
+    #     for m in rawMatches:
+    #         # ensure the distance is within a certain ratio of each
+    #         # other (i.e., Lowe's ratio test)
+    #         if len(m) == 2 and m[0].distance < m[1].distance * ratio:
+    #             matches.append((m[0].trainIdx, m[0].queryIdx))
+
+    #     # computing a homography requires at least 4 matches
+    #     if len(matches) > 4:
+    #         print("Number of matches found:", len(matches))
+    #         # construct the two sets of points
+    #         ptsA = np.float32([kpsA[i] for (_, i) in matches])
+    #         ptsB = np.float32([kpsB[i] for (i, _) in matches])
+    #         print("ptsA shape:", ptsA.shape)
+    #         print("ptsB shape:", ptsB.shape)
+
+    #         # compute the homography between the two sets of points
+    #         (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, reprojThresh)
+
+    #         # return the matches along with the homography matrix
+    #         # and status of each matched point
+    #         return (matches, H, status)
+    #     else:
+    #         print("Number of matches found:", len(matches))
+    #     # otherwise, no homography could be computed
+    #     return None

@@ -1,8 +1,8 @@
 import cv2
 
 # Initialize the camera capture objects
-cap_left = cv2.VideoCapture(0)
-cap_right = cv2.VideoCapture(1)
+cap_left = cv2.VideoCapture(1)
+cap_right = cv2.VideoCapture()
 
 # Set the camera properties (optional)
 cap_left.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
